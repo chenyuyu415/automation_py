@@ -66,8 +66,7 @@ cd &&\
 rm -rf /tmp/docsis
 
 # Install chrome and chromedriver
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-wget http://www.linuxidc.com/files/repo/google-chrome.list -P /etc/apt/sources.list.d/ && \
+RUN wget http://www.linuxidc.com/files/repo/google-chrome.list -P /etc/apt/sources.list.d/ && \
 wget -q -O - https://dl.google.com/linux/linux_signing_key.pub  | apt-key add - && \
 apt-get update && apt-get -y install google-chrome-stable
 

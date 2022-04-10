@@ -3,7 +3,7 @@ DOCKER_NAME=myauto
 DOCKER_TAG=1.0
 MYAUTO_ROOT=$(cd "$(dirname "$0")/.."; pwd)
 DOCKER_ROOT=$MYAUTO_ROOT/docker
-#TFTP_DIR=/srv/tftp
+BASE_NAME=$(basename "$(pwd)")
 
 cleanup() {
   r=$?
@@ -39,15 +39,10 @@ then
     exit 2
 fi
 
-CUSTOM_HOSTNAME="$(hostname)-docker"
-
 if test -t 1 -a -t 0
 then
     TTY="--interactive --tty"
 fi
-
- # linux
-_USER="--user $(id -u):$(id -g)"
 
 if test -n "$TZ"
 then
@@ -63,8 +58,7 @@ fi
 cd "$DOCKER_ROOT"
 
  # First build base docker file to get latest TRIDENT image
-#docker build --quiet --tag $DOCKER_NAME:$DOCKER_TAG .
-docker build --tag $DOCKER_NAME:$DOCKER_TAG .
+docker build --quiet --tag $DOCKER_NAME:$DOCKER_TAG .
 
 # set the name for container, to have easy possibility to kill the docker in Jenkins
 CONT_NAME=''
@@ -78,21 +72,18 @@ id=
 trap cleanup $sig
 id=$(docker create \
         --rm \
-        --hostname $CUSTOM_HOSTNAME \
         --init \
         $TTY \
         --tmpfs=/tmp:exec \
         --net host \
         --env debian_chroot=DOCKER:$DOCKER_NAME \
+        --env HOME=/root\
         --env TERM \
         --env JOB_NAME \
         --env BUILD_NUMBER \
         --env BUILD_URL \
-        --env MYAUTO_ROOT \
-        --workdir $MYAUTO_ROOT \
-        -v "$MYAUTO_ROOT":"$MYAUTO_ROOT" \
-#        -v $HOME:$HOME \
-#        -v $TFTP_DIR:$MYAUTO_ROOT/tftpboot \
+        --workdir /root/$BASE_NAME \
+        -v $MYAUTO_ROOT:/root/$BASE_NAME \
         -v /dev/shm:/dev/shm \
         --shm-size 2G \
         $_USER \
