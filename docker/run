@@ -1,0 +1,111 @@
+#!/bin/bash -ae
+DOCKER_NAME=test
+DOCKER_TAG=1
+SVT_ROOT=$(cd "$(dirname "$0")/.."; pwd)
+DOCKER_ROOT=$SVT_ROOT/docker
+TFTP_DIR=/srv/tftp
+
+cleanup() {
+  r=$?
+  trap - $sig
+  test -z $id || docker kill $id
+  exit $r
+}
+get_container_name_for_jenkins_job() {
+    echo "$JOB_BASE_NAME-$BUILD_ID" | sed 's/[^a-zA-Z0-9_-]//g'
+}
+
+kill_jenkins_job_container_name() {
+  local CONTAINER_NAME=$(get_container_name_for_jenkins_job)
+  local CONTAINER_ID=`docker ps -f name=$CONTAINER_NAME -q`
+
+  if test -n "$CONTAINER_ID" ; then
+      echo "Killing container '$CONTAINER_ID' ..."
+      docker kill $CONTAINER_ID
+  else
+      echo "Container ID for name '$CONTAINER_NAME' not found."
+  fi
+}
+
+if test -z "${SVT_ROOT}"
+then
+    echo Missing env SVT_ROOT
+    exit 1
+fi
+
+if test -z "${DOCKER_ROOT}"
+then
+    echo Missing env DOCKER_ROOT
+    exit 2
+fi
+
+CUSTOM_HOSTNAME="$(hostname)-docker"
+
+if test -t 1 -a -t 0
+then
+    TTY="--interactive --tty"
+fi
+
+ # linux
+_USER="--user $(id -u):$(id -g)"
+
+if test -n "$TZ"
+then
+  _TIMEZONE="-e TZ=$TZ"
+elif test -f /etc/timezone
+then
+    _TIMEZONE="-e TZ=$(cat /etc/timezone)"
+else
+    _TIMEZONE="-v /etc/localtime:/etc/localtime"
+fi
+
+
+cd "$DOCKER_ROOT"
+
+ # First build base docker file to get latest TRIDENT image
+docker build --quiet --tag $DOCKER_NAME:$DOCKER_TAG .
+
+# set the name for container, to have easy possibility to kill the docker in Jenkins
+CONT_NAME=''
+if test -n "${JOB_BASE_NAME}" && test -z "${PR_CHECK}"
+then
+    CONT_NAME="--name $(get_container_name_for_jenkins_job)"
+fi
+
+sig='INT HUP KILL TERM EXIT QUIT'
+id=
+trap cleanup $sig
+id=$(docker create \
+        --rm \
+        --hostname $CUSTOM_HOSTNAME \
+        --init \
+        $TTY \
+        --tmpfs=/tmp:exec \
+        --net host \
+        --env debian_chroot=DOCKER:$DOCKER_NAME \
+        --env TERM \
+        --env JOB_NAME \
+        --env BUILD_NUMBER \
+        --env BUILD_URL \
+        --env SVT_ROOT \
+        --workdir $SVT_ROOT \
+        -v "$SVT_ROOT":"$SVT_ROOT"\
+        -v $HOME:$HOME \
+        -v $TFTP_DIR:$SVT_ROOT/tftpboot \
+        -v /dev/shm:/dev/shm \
+        --shm-size 2G \
+        $_USER \
+        $_TIMEZONE \
+        $DOCKER_OPTS \
+        $CONT_NAME \
+        $DOCKER_NAME:$DOCKER_TAG \
+        sh -c '
+            export SHELL=/bin/bash
+            exec "$@"' - "$@")
+
+set +e
+
+docker start -ai $id
+r=$?
+id=
+exit $r
