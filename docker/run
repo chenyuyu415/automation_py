@@ -1,9 +1,9 @@
 #!/bin/bash -ae
-DOCKER_NAME=test
-DOCKER_TAG=1
-SVT_ROOT=$(cd "$(dirname "$0")/.."; pwd)
-DOCKER_ROOT=$SVT_ROOT/docker
-TFTP_DIR=/srv/tftp
+DOCKER_NAME=myauto
+DOCKER_TAG=1.0
+MYAUTO_ROOT=$(cd "$(dirname "$0")/.."; pwd)
+DOCKER_ROOT=$MYAUTO_ROOT/docker
+#TFTP_DIR=/srv/tftp
 
 cleanup() {
   r=$?
@@ -27,9 +27,9 @@ kill_jenkins_job_container_name() {
   fi
 }
 
-if test -z "${SVT_ROOT}"
+if test -z "${MYAUTO_ROOT}"
 then
-    echo Missing env SVT_ROOT
+    echo Missing env MYAUTO_ROOT
     exit 1
 fi
 
@@ -63,7 +63,8 @@ fi
 cd "$DOCKER_ROOT"
 
  # First build base docker file to get latest TRIDENT image
-docker build --quiet --tag $DOCKER_NAME:$DOCKER_TAG .
+#docker build --quiet --tag $DOCKER_NAME:$DOCKER_TAG .
+docker build --tag $DOCKER_NAME:$DOCKER_TAG .
 
 # set the name for container, to have easy possibility to kill the docker in Jenkins
 CONT_NAME=''
@@ -87,11 +88,11 @@ id=$(docker create \
         --env JOB_NAME \
         --env BUILD_NUMBER \
         --env BUILD_URL \
-        --env SVT_ROOT \
-        --workdir $SVT_ROOT \
-        -v "$SVT_ROOT":"$SVT_ROOT"\
-        -v $HOME:$HOME \
-        -v $TFTP_DIR:$SVT_ROOT/tftpboot \
+        --env MYAUTO_ROOT \
+        --workdir $MYAUTO_ROOT \
+        -v "$MYAUTO_ROOT":"$MYAUTO_ROOT" \
+#        -v $HOME:$HOME \
+#        -v $TFTP_DIR:$MYAUTO_ROOT/tftpboot \
         -v /dev/shm:/dev/shm \
         --shm-size 2G \
         $_USER \

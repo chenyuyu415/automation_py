@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 ENV LC_ALL C.UTF-8
 ENV LANG C.UTF-8
 
@@ -36,23 +36,23 @@ libfl-dev \
 libperl-dev
 
 # Set default python as python3
-RUN ln -s /usr/bin/python3.8 /usr/bin/python
+RUN ln -s /usr/bin/python3.10 /usr/bin/python
 
 # Install netsnmp
-RUN wget https://sourceforge.net/projects/net-snmp/files/net-snmp/5.9.1/net-snmp-5.9.1.tar.gz/download -O /tmp/net-snmp-5.9.1.tar.gz && \
-tar zxf /tmp/net-snmp-5.9.1.tar.gz -C /tmp/ && \
-rm /tmp/net-snmp-5.9.1.tar.gz && \
-cd /tmp/net-snmp-5.9.1 && \
+RUN wget https://sourceforge.net/projects/net-snmp/files/net-snmp/5.9.2-pre-releases/net-snmp-5.9.2.pre1.tar.gz/download -O /tmp/net-snmp-5.9.2.pre1.tar.gz && \
+tar zxf /tmp/net-snmp-5.9.2.pre1.tar.gz -C /tmp/ && \
+rm /tmp/net-snmp-5.9.2.pre1.tar.gz && \
+cd /tmp/net-snmp-5.9.2.pre1 && \
 ./configure --with-default-snmp-version="2" \
 --with-sys-contact="@@no.where" --with-sys-location="Unknown" \
 --with-logfile="/var/log/snmpd.log" --with-persistent-directory="/var/net-snmp" && \
 make && \
 make install && \
-cd /tmp/net-snmp-5.9.1/python/ && \
+cd /tmp/net-snmp-5.9.2.pre1/python/ && \
 python setup.py install && \
 cd && \
-rm -rf /tmp/net-snmp-5.9.1 && \
-cp /usr/local/lib/libnetsnmp.so.40 /usr/lib/
+rm -rf /tmp/net-snmp-5.9.2.pre1
+#cp /usr/local/lib/libnetsnmp.so.40 /usr/lib/
 
 # Install docsis
 RUN cd /tmp && \
