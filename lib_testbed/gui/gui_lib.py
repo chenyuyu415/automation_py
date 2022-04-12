@@ -1,5 +1,4 @@
 import time
-import webbrowser
 from telnetlib import EC
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -23,10 +22,6 @@ class GuiLib:
             self.browser.get(url)
         except NoAlertPresentException:
             raise
-
-    def enter(self, url):
-        self.browser.implicitly_wait(30)
-        self.browser.get(url)
 
     def action_element(self, element):
         new_element = element.split('=', 1)
